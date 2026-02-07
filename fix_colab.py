@@ -6,7 +6,7 @@ with open('colab_setup.ipynb', 'r', encoding='utf-8-sig') as f:
 
 # Update title
 nb['cells'][0]['source'] = [
-    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 6)\n",
+    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 7)\n",
     "\n",
     "Run this notebook on Google Colab with GPU enabled for the best experience!\n",
     "\n",
@@ -18,7 +18,7 @@ nb['cells'][0]['source'] = [
 
 # Update the install cell (cell 3, index 3)
 nb['cells'][3]['source'] = [
-    "# Forced dependency resolution fix\n",
+    "# Forced dependency resolution fix (VERSION 7)\n",
     "!pip -q install --upgrade pip\n",
     "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless opencv-contrib-python || true\n",
     "!pip -q install \\\n",
@@ -33,7 +33,7 @@ nb['cells'][3]['source'] = [
     "  \"opencv-python\" \\\n",
     "  \"opencv-python-headless\"\n",
     "\n",
-    "print(\"✅ Installs done — NOW: Runtime → Restart runtime\")\n"
+    "print(\"✅ Version 7 Installs done — NOW: Runtime → Restart runtime\")\n"
 ]
 
 # Insert version check after install cell
