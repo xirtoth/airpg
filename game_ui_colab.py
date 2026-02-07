@@ -156,18 +156,20 @@ Player's action: {player_action} [/INST] Story:"""
             return f"The world shimmers as a magical anomaly occurs... (Error: {e})"
     
     def generate_image_prompt(self, scene_description):
-        """Use the LLM to generate a visual prompt for Stable Diffusion."""
-        prompt = f"""[INST] You are a visual artist. Create a short, highly descriptive image prompt (15-20 words) for a fantasy RPG scene based on this description:
-"{scene_description}"
-Focus only on visual elements: lighting, environment, and objects. Do not include story or character names. [/INST] Visual Prompt:"""
+        """Use the LLM to generate a visual keyword list for Stable Diffusion."""
+        prompt = f"""[INST] You are a professional concept artist for fantasy games. 
+Create a comma-separated list of 10-15 visual keywords describing this scene: "{scene_description}"
+Include details about environment, lighting, weather, and atmosphere. 
+Format: keyword1, keyword2, keyword3...
+Do not include story text or character names. [/INST] Visual Prompt:"""
         
         try:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             with torch.no_grad():
                 outputs = self.llm_model.generate(
                     **inputs,
-                    max_new_tokens=50,
-                    temperature=0.4,
+                    max_new_tokens=60,
+                    temperature=0.3, # Low temperature for more consistent keywords
                     do_sample=True,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
@@ -177,9 +179,9 @@ Focus only on visual elements: lighting, environment, and objects. Do not includ
                 result = result.split("Visual Prompt:")[-1].strip()
             else:
                 result = result.split("[/INST]")[-1].strip()
-                
-            # Clean up any "Story:" or other meta text
-            result = result.replace("Story:", "").strip()
+            
+            # Additional cleanup to ensure only keywords
+            result = result.replace(".", "").replace("Story:", "").strip()
             return result
         except Exception as e:
             print(f"Error generating visual prompt: {e}")
