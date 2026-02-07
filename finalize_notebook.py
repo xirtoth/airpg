@@ -7,7 +7,7 @@ with open(notebook_path, 'r', encoding='utf-8') as f:
 
 # Update Cell 0: Header
 nb['cells'][0]['source'] = [
-    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 15)\n",
+    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 16)\n",
     "\n",
     "Run this notebook on Google Colab with GPU enabled for the best experience!\n",
     "\n",
@@ -35,11 +35,11 @@ nb['cells'][2]['source'] = [
     "!grep \"LLM_MODEL\" config_colab.py"
 ]
 
-# Update Cell 3: Dependencies (Version 15)
+# Update Cell 3: Dependencies (Version 16)
 nb['cells'][3]['source'] = [
-    "# Forced dependency resolution fix (VERSION 15 - Strict Compatibility)\n",
+    "# Forced dependency resolution fix (VERSION 16 - Ultra Stability)\n",
     "!pip -q install --upgrade pip\n",
-    "!pip -q install \"numpy>=2.0.0,<2.1.0\" # Satisfy both Python 3.12 and pre-installed numba/tensorflow\n",
+    "!pip -q install \"datasets\" \"numpy>=2.0.0,<2.1.0\" # Install these first to satisfy Colab requirements\n",
     "!pip -q install \\\n",
     "  \"transformers>=4.45.0\" \\\n",
     "  \"diffusers>=0.30.0\" \\\n",
@@ -51,10 +51,9 @@ nb['cells'][3]['source'] = [
     "  \"huggingface-hub>=0.25.0\" \\\n",
     "  \"opencv-python\" \\\n",
     "  \"opencv-python-headless\" \\\n",
-    "  \"datasets\" \\\n",
     "  \"transformers[sentencepiece]\"\n",
     "\n",
-    "print(\"✅ Version 15 Installs done — NOW: Runtime → Restart runtime\")"
+    "print(\"✅ Version 16 Installs done — NOW: Runtime → Restart runtime\")"
 ]
 
 with open(notebook_path, 'w', encoding='utf-8') as f:
