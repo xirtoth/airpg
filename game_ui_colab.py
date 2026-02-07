@@ -237,28 +237,33 @@ Player's action: {player_action} [/INST] Story:"""
         
         try:
             with torch.no_grad():
-                image = self.diffusion_pipe(
+                result = self.diffusion_pipe(
                     prompt=enhanced_prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=config.INFERENCE_STEPS,
                     guidance_scale=config.GUIDANCE_SCALE,
                     height=config.IMAGE_HEIGHT,
                     width=config.IMAGE_WIDTH
-                ).images[0]
+                )
+                image = result.images[0]
             
             if config.SAVE_IMAGES:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"{config.IMAGES_DIR}/scene_turn{self.turn_count:03d}_{timestamp}.png"
                 image.save(filename)
                 self.current_image = filename
+                return filename  # Return path to file
             
-            return image
+            return image  # Fallback to PIL object
         except Exception as e:
             print(f"Error generating image: {e}")
             return None
     
     def process_action(self, player_action, history, progress=gr.Progress()):
         """Process player action and return updated chat history and image."""
+        if history is None:
+            history = []
+            
         if not player_action or not player_action.strip():
             return history, self.current_image
         
@@ -276,10 +281,11 @@ Player's action: {player_action} [/INST] Story:"""
         })
         
         # Generate image
+        progress(0.5, desc="Visualizing the scene...")
         self.current_image = self.generate_scene_image(response, progress)
         
-        # Update chat history
-        history.append((player_action, response))
+        # Update chat history (ensure list of lists format)
+        history.append([player_action, response])
         
         progress(1.0, desc="Done!")
         return history, self.current_image
@@ -329,7 +335,7 @@ crowd - you notice your coin purse is lighter. Suddenly, a cloaked figure grabs 
         # Generate initial image
         self.current_image = self.generate_scene_image(initial_scene)
         
-        return [("🎮 Game Started", initial_scene)], self.current_image
+        return [["🎮 Game Started", initial_scene]], self.current_image
 
 
 # Initialize game
