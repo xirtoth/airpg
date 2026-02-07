@@ -1,23 +1,42 @@
 import json
 
 # Read the current notebook
-with open('github_version.ipynb', 'r', encoding='utf-8') as f:
+with open('colab_setup.ipynb', 'r', encoding='utf-8') as f:
     nb = json.load(f)
 
 # Update the install cell (cell 3, index 3)
 nb['cells'][3]['source'] = [
-    "# Uninstall conflicting packages\n",
-    "!pip uninstall -y transformers diffusers accelerate huggingface-hub -q\n",
-    "!pip install -q --force-reinstall numpy==1.26.4\n",
-    "!pip install -q torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu118\n",
-    "!pip install -q huggingface-hub==0.23.2 safetensors sentencepiece protobuf\n",
-    "!pip install -q --no-deps transformers==4.41.0\n",
-    "!pip install -q --no-deps diffusers==0.27.0\n",
-    "!pip install -q accelerate==0.30.0 gradio\n",
+    "# Forced dependency resolution fix\n",
+    "!pip -q install --upgrade pip\n",
+    "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless || true\n",
+    "!pip -q install \\\n",
+    "  \"numpy==2.1.3\" \\\n",
+    "  \"huggingface-hub==0.33.5\" \\\n",
+    "  \"transformers==4.41.0\" \\\n",
+    "  \"tokenizers==0.19.1\" \\\n",
+    "  \"datasets==2.13.0\" \\\n",
+    "  \"gradio==5.50.0\" \\\n",
+    "  \"diffusers==0.24.1\" \\\n",
+    "  \"accelerate==0.22.0\"\n",
     "\n",
-    'print("✅ All packages installed!")\n',
-    'print("⚠️ MUST RESTART: Runtime → Restart runtime")'
+    "print(\"✅ Installs done — NOW: Runtime → Restart runtime\")\n"
 ]
+
+# Insert version check after install cell
+if len(nb['cells']) <= 4 or "Verify Versions" not in str(nb['cells'][4]):
+    nb['cells'].insert(4, {
+        "cell_type": "code",
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Step 1.1: Verify Versions (Run after Restart)\n",
+            "import numpy, transformers, huggingface_hub, gradio\n",
+            "print(\"numpy:\", numpy.__version__)\n",
+            "print(\"transformers:\", transformers.__version__)\n",
+            "print(\"huggingface_hub:\", huggingface_hub.__version__)\n",
+            "print(\"gradio:\", gradio.__version__)\n"
+        ]
+    })
 
 # Write the fixed notebook
 with open('colab_setup.ipynb', 'w', encoding='utf-8') as f:
