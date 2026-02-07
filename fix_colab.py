@@ -6,7 +6,7 @@ with open('colab_setup.ipynb', 'r', encoding='utf-8-sig') as f:
 
 # Update title
 nb['cells'][0]['source'] = [
-    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 9)\n",
+    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 10)\n",
     "\n",
     "Run this notebook on Google Colab with GPU enabled for the best experience!\n",
     "\n",
@@ -16,24 +16,36 @@ nb['cells'][0]['source'] = [
     "3. The game will launch in a web interface with a public URL"
 ]
 
+# Update the clone cell (cell 2, index 2)
+nb['cells'][2]['source'] = [
+    "# Clone or Update the repository\n",
+    "import os\n",
+    "if not os.path.exists('airpg'):\n",
+    "    !git clone https://github.com/xirtoth/airpg.git\n",
+    "    %cd airpg\n",
+    "else:\n",
+    "    %cd airpg\n",
+    "    !git pull\n"
+]
+
 # Update the install cell (cell 3, index 3)
 nb['cells'][3]['source'] = [
-    "# Forced dependency resolution fix (VERSION 9)\n",
+    "# Forced dependency resolution fix (VERSION 10)\n",
     "!pip -q install --upgrade pip\n",
     "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless opencv-contrib-python diffusers accelerate || true\n",
     "!pip -q install \\\n",
     "  \"numpy==2.0.2\" \\\n",
-    "  \"huggingface-hub==0.33.5\" \\\n",
-    "  \"transformers==4.44.0\" \\\n",
-    "  \"tokenizers==0.19.1\" \\\n",
-    "  \"datasets==2.13.0\" \\\n",
-    "  \"gradio==5.7.1\" \\\n",
-    "  \"diffusers==0.31.0\" \\\n",
-    "  \"accelerate==0.33.0\" \\\n",
+    "  \"huggingface-hub>=0.25.0\" \\\n",
+    "  \"transformers>=4.44.0\" \\\n",
+    "  \"tokenizers>=0.19.0\" \\\n",
+    "  \"datasets>=2.16.0\" \\\n",
+    "  \"gradio>=5.0.0\" \\\n",
+    "  \"diffusers>=0.30.0\" \\\n",
+    "  \"accelerate>=0.33.0\" \\\n",
     "  \"opencv-python\" \\\n",
     "  \"opencv-python-headless\"\n",
     "\n",
-    "print(\"✅ Version 9 Installs done — NOW: Runtime → Restart runtime\")\n"
+    "print(\"✅ Version 10 Installs done — NOW: Runtime → Restart runtime\")\n"
 ]
 
 # Insert version check after install cell
