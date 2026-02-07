@@ -1,10 +1,7 @@
 """Configuration settings for the AI RPG game - Colab Optimized Version."""
 
-# LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"  # Best quality
-LLM_MODEL = "microsoft/phi-2"  # Faster, works well on free Colab
-
-# DIFFUSION_MODEL = "stabilityai/sdxl-turbo"  # Best quality
-DIFFUSION_MODEL = "runwayml/stable-diffusion-v1-5"  # More compatible
+LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+DIFFUSION_MODEL = "stabilityai/sdxl-turbo"
 
 # Generation parameters
 MAX_NEW_TOKENS = 300
@@ -14,10 +11,12 @@ TOP_P = 0.95
 # Image parameters
 IMAGE_WIDTH = 512
 IMAGE_HEIGHT = 512
-INFERENCE_STEPS = 20
-GUIDANCE_SCALE = 7.5
+INFERENCE_STEPS = 2
+GUIDANCE_SCALE = 0.0
 
 # Game settings
+SAVE_IMAGES = True
+IMAGES_DIR = "generated_images"
 GAME_TITLE = "AI Fantasy RPG"
 IMAGES_DIR = "generated_images"
 SAVE_IMAGES = True

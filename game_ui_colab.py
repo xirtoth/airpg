@@ -6,8 +6,8 @@ An interactive RPG with a beautiful web interface powered by Gradio
 import os
 import sys
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from diffusers import AutoPipelineForText2Image, DPMSolverMultistepScheduler
 from PIL import Image
 import datetime
 import gradio as gr
@@ -39,24 +39,32 @@ class AIRPGGame:
         """Load both LLM and Stable Diffusion models."""
         print("\n🔄 Loading AI models (this may take a minute)...")
         
-        cache_dir = "D:/huggingface_cache"
-        
-        # Load LLM (simpler loading for smaller models)
+        # Load LLM with 4-bit quantization for Mistral 7B to fit in Colab VRAM
         try:
             print(f"Loading LLM: {config.LLM_MODEL}")
-            print(f"Cache directory: {cache_dir}")
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                config.LLM_MODEL,
-                trust_remote_code=True,
-                cache_dir=cache_dir
+            
+            # Setup 4-bit quantization
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
             )
             
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                config.LLM_MODEL,
+                trust_remote_code=True
+            )
+            
+            # Add padding token if missing (Mistral needs this)
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+                
             self.llm_model = AutoModelForCausalLM.from_pretrained(
                 config.LLM_MODEL,
+                quantization_config=quantization_config,
                 device_map="auto",
-                trust_remote_code=True,
-                torch_dtype=torch.float16,
-                cache_dir=cache_dir
+                trust_remote_code=True
             )
             print("✓ LLM loaded successfully!")
         except Exception as e:
@@ -66,18 +74,19 @@ class AIRPGGame:
         # Load Stable Diffusion
         try:
             print(f"Loading Stable Diffusion: {config.DIFFUSION_MODEL}")
-            self.diffusion_pipe = StableDiffusionPipeline.from_pretrained(
+            self.diffusion_pipe = AutoPipelineForText2Image.from_pretrained(
                 config.DIFFUSION_MODEL,
                 torch_dtype=torch.float16,
-                safety_checker=None,
-                requires_safety_checker=False,
-                cache_dir=cache_dir
-            )
+                variant="fp16" if "turbo" in config.DIFFUSION_MODEL else "main",
+                use_safetensors=True
+            ).to(self.device)
             
-            self.diffusion_pipe.scheduler = DPMSolverMultistepScheduler.from_config(
-                self.diffusion_pipe.scheduler.config
-            )
-            self.diffusion_pipe = self.diffusion_pipe.to(self.device)
+            # If not turbo, use a faster scheduler
+            if "turbo" not in config.DIFFUSION_MODEL:
+                self.diffusion_pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+                    self.diffusion_pipe.scheduler.config
+                )
+            
             self.diffusion_pipe.enable_attention_slicing()
             
             try:
@@ -94,89 +103,57 @@ class AIRPGGame:
         """Generate the next part of the story based on player action."""
         progress(0.3, desc="AI is thinking...")
         
-        # Build conversation history with last 3 turns for better memory
+        # Build conversation history
         conversation_context = ""
         if self.conversation_history:
-            recent_history = self.conversation_history[-3:]  # Last 3 turns
+            recent_history = self.conversation_history[-3:]
             for i, entry in enumerate(recent_history):
                 action = entry['action']
-                response = entry['response'][:200]  # Keep more context
+                response = entry['response'][:200]
                 if action != "START":
                     conversation_context += f"Player: {action}\nStory: {response}\n\n"
                 else:
                     conversation_context += f"Story: {response}\n\n"
         
-        # TinyLlama chat format with full context
-        if conversation_context:
-            messages = f"""<|system|>
-You are a fantasy RPG storyteller. Continue the story based on what happened before and the player's new action. Keep consistency with previous events. Write 2-3 sentences.</s>
-<|user|>
-Previous story:
+        # Mistral Instruct Format
+        prompt = f"""[INST] You are a professional fantasy RPG dungeon master. 
+Continue the story based on the player's action. Write 2-3 atmospheric sentences.
+Context:
 {conversation_context}
-Player's new action: {player_action}
 
-What happens next?</s>
-<|assistant|>
-"""
-        else:
-            messages = f"""<|system|>
-You are a fantasy RPG storyteller. Describe what happens in 2-3 sentences.</s>
-<|user|>
-{player_action}</s>
-<|assistant|>
-"""
-
-        inputs = self.tokenizer(messages, return_tensors="pt", truncation=True, max_length=768).to(self.device)
+Player's action: {player_action} [/INST] Story:"""
         
-        with torch.no_grad():
-            outputs = self.llm_model.generate(
-                inputs.input_ids,
-                max_new_tokens=250,  # Increased for complete responses
-                temperature=0.7,
-                top_p=0.9,
-                top_k=40,
-                do_sample=True,
-                pad_token_id=self.tokenizer.eos_token_id if self.tokenizer.eos_token_id else 0,
-                eos_token_id=[self.tokenizer.eos_token_id, self.tokenizer.encode("</s>")[0]] if self.tokenizer.eos_token_id else [0],
-                repetition_penalty=1.15,
-                no_repeat_ngram_size=3  # Prevent repetitive phrases
-            )
-        
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Clean up - extract only assistant response
-        if "<|assistant|>" in response:
-            response = response.split("<|assistant|>")[-1].strip()
-        if "<|user|>" in response:
-            response = response.split("<|user|>")[0].strip()
-        if "</s>" in response:
-            response = response.split("</s>")[0].strip()
-        
-        # Remove any remaining prompt text and meta-phrases
-        meta_phrases = [
-            "Player action:", "What happens next?", "Here's", "Here is",
-            "Updated version:", "Continuation:", "Updated:", "Version:"
-        ]
-        for phrase in meta_phrases:
-            if phrase in response:
-                parts = response.split(phrase)
-                # Take the part after the meta-phrase if it's at the start
-                if len(parts) > 1 and len(parts[0]) < 20:
-                    response = parts[1].strip()
-                    break
-        
-        # Clean up incomplete sentences at the end
-        if response and not response[-1] in '.!?"':
-            # Find last complete sentence
-            last_period = max(response.rfind('.'), response.rfind('!'), response.rfind('?'))
-            if last_period > 50:  # Only truncate if we have enough text
-                response = response[:last_period + 1]
-        
-        # Ensure minimum length
-        if len(response) < 50:
-            response = f"As you {player_action}, the world around you shifts. The air grows thick with anticipation. Something significant is about to happen."
-        
-        return response
+        try:
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            
+            with torch.no_grad():
+                outputs = self.llm_model.generate(
+                    **inputs,
+                    max_new_tokens=config.MAX_NEW_TOKENS,
+                    temperature=config.TEMPERATURE,
+                    top_p=config.TOP_P,
+                    do_sample=True,
+                    pad_token_id=self.tokenizer.pad_token_id
+                )
+            
+            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Remove prompt from response
+            if "Story:" in response:
+                response = response.split("Story:")[-1].strip()
+            else:
+                response = response.split("[/INST]")[-1].strip()
+            
+            # Clean up incomplete sentences at the end
+            if response and not response[-1] in '.!?"':
+                last_period = max(response.rfind('.'), response.rfind('!'), response.rfind('?'))
+                if last_period > 50:
+                    response = response[:last_period + 1]
+            
+            return response
+        except Exception as e:
+            print(f"Error generating story: {e}")
+            return f"The world shimmers as a magical anomaly occurs... (Error: {e})"
     
     def generate_image_prompt(self, scene_description):
         """Extract visual keywords directly from the story text."""
@@ -234,26 +211,26 @@ You are a fantasy RPG storyteller. Describe what happens in 2-3 sentences.</s>
         if not self.diffusion_pipe:
             return None
         
-        # Clear VRAM cache before first generation
-        if self.turn_count == 0:
+        # Clear VRAM cache occasionally
+        if self.turn_count % 3 == 0:
             torch.cuda.empty_cache()
         
         progress(0.6, desc="Creating image prompt...")
         
-        # Use LLM to extract keywords from its own story
+        # Use simple keyword extraction
         keywords = self.generate_image_prompt(scene_description)
         
         # Add fantasy RPG style
         enhanced_prompt = f"fantasy RPG art, {keywords}, detailed digital painting, dramatic lighting, high quality"
         
-        # Negative prompt to avoid common issues
-        negative_prompt = "blurry, low quality, distorted, deformed, ugly, bad anatomy, text, watermark, signature, amateur"
+        # Negative prompt (SDXL Turbo doesn't need much, others do)
+        is_turbo = "turbo" in config.DIFFUSION_MODEL
+        negative_prompt = "blurry, low quality, distorted, deformed, text, watermark" if not is_turbo else None
         
-        # Print the prompt to console for debugging
         print("\n" + "="*60)
         print("🎨 IMAGE PROMPT:")
         print(f"Positive: {enhanced_prompt}")
-        print(f"Negative: {negative_prompt}")
+        print(f"Is Turbo: {is_turbo}")
         print("="*60 + "\n")
         
         progress(0.7, desc="Generating scene image...")
@@ -261,7 +238,7 @@ You are a fantasy RPG storyteller. Describe what happens in 2-3 sentences.</s>
         try:
             with torch.no_grad():
                 image = self.diffusion_pipe(
-                    enhanced_prompt,
+                    prompt=enhanced_prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=config.INFERENCE_STEPS,
                     guidance_scale=config.GUIDANCE_SCALE,
@@ -271,8 +248,9 @@ You are a fantasy RPG storyteller. Describe what happens in 2-3 sentences.</s>
             
             if config.SAVE_IMAGES:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"{config.IMAGES_DIR}/scene_{self.turn_count:03d}_{timestamp}.png"
+                filename = f"{config.IMAGES_DIR}/scene_trun{self.turn_count:03d}_{timestamp}.png"
                 image.save(filename)
+                self.current_image = filename
             
             return image
         except Exception as e:
