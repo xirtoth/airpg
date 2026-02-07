@@ -156,55 +156,42 @@ Player's action: {player_action} [/INST] Story:"""
             return f"The world shimmers as a magical anomaly occurs... (Error: {e})"
     
     def generate_image_prompt(self, scene_description):
-        """Extract visual keywords directly from the story text."""
+        """Use the LLM to generate a visual prompt for Stable Diffusion."""
+        prompt = f"""[INST] You are a visual artist. Create a short, highly descriptive image prompt (15-20 words) for a fantasy RPG scene based on this description:
+"{scene_description}"
+Focus only on visual elements: lighting, environment, and objects. Do not include story or character names. [/INST] Visual Prompt:"""
         
-        # Blacklist of non-visual words
-        blacklist = {
-            'you', 'your', 'the', 'and', 'with', 'that', 'this', 'from', 'into', 
-            'are', 'is', 'was', 'were', 'has', 'have', 'had', 'will', 'would', 
-            'could', 'should', 'can', 'may', 'might', 'must', 'shall',
-            'player', 'continue', 'story', 'where', 'they', 'them', 'their',
-            'left', 'scene', 'between', 'keywords', 'here', 'there', 'when',
-            'what', 'how', 'why', 'which', 'who', 'whose', 'whom',
-            'description', 'visual', 'words', 'prompt', 'happens', 'next'
-        }
-        
-        # Extract words from first 2-3 sentences
-        sentences = scene_description.split('.')[:3]
-        text = ' '.join(sentences).lower()
-        
-        # Remove punctuation and split
-        for char in ',.!?;:"\'-()[]{}':
-            text = text.replace(char, ' ')
-        
-        words = text.split()
-        
-        # Filter: keep nouns/adjectives (words 4+ chars, not in blacklist, not too common)
-        keywords = []
-        for word in words:
-            if (len(word) >= 4 and 
-                word not in blacklist and
-                not word.endswith('ing') and  # Remove gerunds
-                not word.endswith('ly')):     # Remove adverbs
-                if word not in keywords:  # Avoid duplicates
-                    keywords.append(word)
-                if len(keywords) >= 10:  # Max 10 keywords
-                    break
-        
-        # If we got too few keywords, add some from location detection
-        if len(keywords) < 4:
-            locations = ['tavern', 'forest', 'castle', 'cave', 'dungeon', 'mountain', 
-                        'beach', 'market', 'city', 'village', 'tower', 'temple']
-            for loc in locations:
-                if loc in scene_description.lower():
-                    keywords.insert(0, loc)
-                    break
-        
-        # Ensure we have something
-        if len(keywords) < 2:
-            keywords = ['fantasy', 'medieval', 'adventure', 'scene']
-        
-        return ', '.join(keywords[:10])
+        try:
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                outputs = self.llm_model.generate(
+                    **inputs,
+                    max_new_tokens=50,
+                    temperature=0.4,
+                    do_sample=True,
+                    pad_token_id=self.tokenizer.pad_token_id
+                )
+            
+            result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            if "Visual Prompt:" in result:
+                result = result.split("Visual Prompt:")[-1].strip()
+            else:
+                result = result.split("[/INST]")[-1].strip()
+                
+            # Clean up any "Story:" or other meta text
+            result = result.replace("Story:", "").strip()
+            return result
+        except Exception as e:
+            print(f"Error generating visual prompt: {e}")
+            # Fallback to keyword extraction
+            return self._fallback_image_prompt(scene_description)
+
+    def _fallback_image_prompt(self, scene_description):
+        """Keyword-based fallback for image prompt generation."""
+        blacklist = {'you', 'your', 'the', 'and', 'with', 'that', 'this', 'from', 'into'}
+        words = scene_description.lower().replace('.', ' ').replace(',', ' ').split()
+        keywords = [w for w in words if len(w) > 4 and w not in blacklist]
+        return ", ".join(keywords[:8])
     
     def generate_scene_image(self, scene_description, progress=gr.Progress()):
         """Generate an image based on the scene description."""
@@ -274,7 +261,7 @@ Player's action: {player_action} [/INST] Story:"""
         progress(0.1, desc="Processing your action...")
         response = self.generate_story_response(player_action, progress)
         
-        # Save to history
+        # Save to internal logic history
         self.conversation_history.append({
             'action': player_action,
             'response': response
@@ -284,8 +271,9 @@ Player's action: {player_action} [/INST] Story:"""
         progress(0.5, desc="Visualizing the scene...")
         self.current_image = self.generate_scene_image(response, progress)
         
-        # Update chat history (ensure list of lists format)
-        history.append([player_action, response])
+        # Update Chatbot (Gradio 5 messages format)
+        history.append({"role": "user", "content": player_action})
+        history.append({"role": "assistant", "content": response})
         
         progress(1.0, desc="Done!")
         return history, self.current_image
@@ -297,32 +285,13 @@ Player's action: {player_action} [/INST] Story:"""
         self.conversation_history = []
         self.turn_count = 0
         
-        # Random starting scenarios
+        # Random starting scenarios (Simplified for prompt brevity)
         starting_scenarios = [
-            """You awaken in a dimly lit tavern. The smell of ale and roasted meat fills the air. 
-A hooded figure in the corner watches you intently. The bartender, a burly dwarf, 
-polishes a mug while eyeing you curiously. Your hand instinctively reaches for the 
-sword at your side. You notice a mysterious map on your table.""",
-            
-            """You find yourself at the edge of a dark forest. Ancient trees loom overhead, their branches 
-creating a canopy that blocks out most of the sunlight. Strange sounds echo from within the woods. 
-A worn path leads deeper into the forest, while behind you lies a small village with smoke rising 
-from its chimneys. In your pack, you feel the weight of a mystical amulet.""",
-            
-            """You stand before massive castle gates. Storm clouds gather overhead, and thunder rumbles in the 
-distance. The guards at the gate eye you suspiciously. A royal messenger approaches, breathless and urgent. 
-"You must come quickly," they say, "The king requires your assistance immediately." Your armor feels heavy, 
-and your sword gleams with an unnatural light.""",
-            
-            """You awaken on a sandy beach, waves lapping at your feet. The wreckage of a ship lies scattered 
-along the shore. Your clothes are soaked, but miraculously, your weapons remained strapped to your side. 
-In the distance, you see smoke rising from what appears to be a jungle. A sealed bottle has washed up 
-beside you, containing what looks like a treasure map.""",
-            
-            """You're in a bustling marketplace filled with exotic merchants and strange creatures. The air is 
-thick with the scent of spices and magic. A street urchin bumps into you and quickly disappears into the 
-crowd - you notice your coin purse is lighter. Suddenly, a cloaked figure grabs your arm and whispers, 
-"They're looking for you. Follow me if you want to live." """
+            "You awaken in a dimly lit tavern. The smell of ale and roasted meat fills the air. A hooded figure in the corner watches you intently.",
+            "You find yourself at the edge of a dark forest. Ancient trees loom overhead. A worn path leads deeper into the woods.",
+            "You stand before massive castle gates. Storm clouds gather overhead. The guards at the gate eye you suspiciously.",
+            "You awaken on a sandy beach, waves lapping at your feet. The wreckage of a ship lies scattered along the shore.",
+            "You're in a bustling marketplace filled with exotic merchants. Suddenly, a cloaked figure grabs your arm and whispers 'Follow me'."
         ]
         
         initial_scene = random.choice(starting_scenarios)
@@ -335,7 +304,8 @@ crowd - you notice your coin purse is lighter. Suddenly, a cloaked figure grabs 
         # Generate initial image
         self.current_image = self.generate_scene_image(initial_scene)
         
-        return [["🎮 Game Started", initial_scene]], self.current_image
+        # Return history in messages format
+        return [{"role": "assistant", "content": initial_scene}], self.current_image
 
 
 # Initialize game
@@ -360,7 +330,7 @@ with gr.Blocks(title="AI Fantasy RPG") as demo:
                 height=500,
                 show_label=True,
                 avatar_images=("👤", "🎲"),
-                type="tuples"
+                type="messages"
             )
             
             with gr.Row():
