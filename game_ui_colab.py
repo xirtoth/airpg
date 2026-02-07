@@ -248,7 +248,7 @@ Player's action: {player_action} [/INST] Story:"""
             
             if config.SAVE_IMAGES:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"{config.IMAGES_DIR}/scene_trun{self.turn_count:03d}_{timestamp}.png"
+                filename = f"{config.IMAGES_DIR}/scene_turn{self.turn_count:03d}_{timestamp}.png"
                 image.save(filename)
                 self.current_image = filename
             
@@ -354,7 +354,7 @@ with gr.Blocks(title="AI Fantasy RPG") as demo:
                 height=500,
                 show_label=True,
                 avatar_images=("👤", "🎲"),
-                autoscroll=True
+                type="tuples"
             )
             
             with gr.Row():
