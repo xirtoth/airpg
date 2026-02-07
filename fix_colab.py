@@ -6,7 +6,7 @@ with open('colab_setup.ipynb', 'r', encoding='utf-8-sig') as f:
 
 # Update title
 nb['cells'][0]['source'] = [
-    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 5)\n",
+    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 6)\n",
     "\n",
     "Run this notebook on Google Colab with GPU enabled for the best experience!\n",
     "\n",
@@ -20,9 +20,9 @@ nb['cells'][0]['source'] = [
 nb['cells'][3]['source'] = [
     "# Forced dependency resolution fix\n",
     "!pip -q install --upgrade pip\n",
-    "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless || true\n",
+    "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless opencv-contrib-python || true\n",
     "!pip -q install \\\n",
-    "  \"numpy==1.26.4\" \\\n",
+    "  \"numpy==2.0.2\" \\\n",
     "  \"huggingface-hub==0.33.5\" \\\n",
     "  \"transformers==4.41.0\" \\\n",
     "  \"tokenizers==0.19.1\" \\\n",
