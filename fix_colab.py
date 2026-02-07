@@ -4,6 +4,18 @@ import json
 with open('colab_setup.ipynb', 'r', encoding='utf-8') as f:
     nb = json.load(f)
 
+# Update title
+nb['cells'][0]['source'] = [
+    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 4)\n",
+    "\n",
+    "Run this notebook on Google Colab with GPU enabled for the best experience!\n",
+    "\n",
+    "**Setup Instructions:**\n",
+    "1. Go to Runtime \u2192 Change runtime type \u2192 Select GPU (T4 recommended)\n",
+    "2. Run all cells in order\n",
+    "3. The game will launch in a web interface with a public URL"
+]
+
 # Update the install cell (cell 3, index 3)
 nb['cells'][3]['source'] = [
     "# Forced dependency resolution fix\n",
@@ -16,7 +28,7 @@ nb['cells'][3]['source'] = [
     "  \"tokenizers==0.19.1\" \\\n",
     "  \"datasets==2.13.0\" \\\n",
     "  \"gradio==5.50.0\" \\\n",
-    "  \"diffusers==0.24.1\" \\\n",
+    "  \"diffusers==0.27.2\" \\\n",
     "  \"accelerate==0.22.0\"\n",
     "\n",
     "print(\"✅ Installs done — NOW: Runtime → Restart runtime\")\n"
