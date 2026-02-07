@@ -1,7 +1,7 @@
 import json
 
 # Read the current notebook
-with open('colab_setup.ipynb', 'r', encoding='utf-8') as f:
+with open('colab_setup.ipynb', 'r', encoding='utf-8-sig') as f:
     nb = json.load(f)
 
 # Update title
