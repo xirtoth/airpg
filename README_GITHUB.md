@@ -2,7 +2,7 @@
 
 An interactive AI-powered fantasy RPG that uses Large Language Models for storytelling and Stable Diffusion for generating beautiful scene images!
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/airpg/blob/main/colab_setup.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/xirtoth/airpg/blob/main/colab_setup.ipynb)
 
 ## 🚀 Quick Start on Google Colab (Recommended)
 
