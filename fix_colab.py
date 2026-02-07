@@ -6,7 +6,7 @@ with open('colab_setup.ipynb', 'r', encoding='utf-8-sig') as f:
 
 # Update title
 nb['cells'][0]['source'] = [
-    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 7)\n",
+    "# AI Fantasy RPG - Google Colab Setup (Updated: Feb 7, 2026 - Version 9)\n",
     "\n",
     "Run this notebook on Google Colab with GPU enabled for the best experience!\n",
     "\n",
@@ -18,22 +18,22 @@ nb['cells'][0]['source'] = [
 
 # Update the install cell (cell 3, index 3)
 nb['cells'][3]['source'] = [
-    "# Forced dependency resolution fix (VERSION 7)\n",
+    "# Forced dependency resolution fix (VERSION 9)\n",
     "!pip -q install --upgrade pip\n",
-    "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless opencv-contrib-python || true\n",
+    "!pip -q uninstall -y huggingface-hub transformers tokenizers datasets gradio numpy opencv-python opencv-python-headless opencv-contrib-python diffusers accelerate || true\n",
     "!pip -q install \\\n",
     "  \"numpy==2.0.2\" \\\n",
     "  \"huggingface-hub==0.33.5\" \\\n",
-    "  \"transformers==4.41.0\" \\\n",
+    "  \"transformers==4.44.0\" \\\n",
     "  \"tokenizers==0.19.1\" \\\n",
     "  \"datasets==2.13.0\" \\\n",
-    "  \"gradio==5.50.0\" \\\n",
-    "  \"diffusers==0.27.2\" \\\n",
-    "  \"accelerate==0.22.0\" \\\n",
+    "  \"gradio==5.7.1\" \\\n",
+    "  \"diffusers==0.31.0\" \\\n",
+    "  \"accelerate==0.33.0\" \\\n",
     "  \"opencv-python\" \\\n",
     "  \"opencv-python-headless\"\n",
     "\n",
-    "print(\"✅ Version 7 Installs done — NOW: Runtime → Restart runtime\")\n"
+    "print(\"✅ Version 9 Installs done — NOW: Runtime → Restart runtime\")\n"
 ]
 
 # Insert version check after install cell
