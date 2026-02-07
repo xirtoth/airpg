@@ -16,6 +16,18 @@ nb['cells'][0]['source'] = [
     "3. The game will launch in a web interface with a public URL"
 ]
 
+# Update the clone cell (cell 2, index 2)
+nb['cells'][2]['source'] = [
+    "# Clone or Update the repository\n",
+    "import os\n",
+    "if not os.path.exists('airpg'):\n",
+    "    !git clone https://github.com/xirtoth/airpg.git\n",
+    "    %cd airpg\n",
+    "else:\n",
+    "    %cd airpg\n",
+    "    !git pull\n"
+]
+
 # Update the install cell (cell 3, index 3)
 nb['cells'][3]['source'] = [
     "# Forced dependency resolution fix (VERSION 10)\n",
