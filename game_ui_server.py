@@ -362,7 +362,7 @@ print("Initializing AI Fantasy RPG...")
 game = AIRPGGame()
 
 # Create Gradio interface
-with gr.Blocks(title="AI Fantasy RPG", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="AI Fantasy RPG") as demo:
     gr.Markdown(
         """
         # 🎮 AI Fantasy RPG
@@ -379,8 +379,7 @@ with gr.Blocks(title="AI Fantasy RPG", theme=gr.themes.Soft()) as demo:
                 height=500,
                 show_label=True,
                 avatar_images=("👤", "🎲"),
-                autoscroll=True,
-                show_copy_button=True
+                autoscroll=True
             )
             
             with gr.Row():
